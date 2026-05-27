@@ -1,0 +1,82 @@
+Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+Formula: nova_form
+   Data: data
+Control: lmerControl(optimizer = "bobyqa")
+
+REML criterion at convergence: 5121.2
+
+Scaled residuals: 
+     Min       1Q   Median       3Q      Max 
+-2.75624 -0.58518  0.00849  0.56411  2.72240 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ GEN:LOC  (Intercept)  81372   285.3   
+ GEN      (Intercept)  70300   265.1   
+ Residual             501831   708.4   
+Number of obs: 366, groups:  GEN:LOC, 134; GEN, 9
+
+Fixed effects:
+                             Estimate Std. Error         df t value Pr(>|t|)    
+(Intercept)                 3.295e+03  1.639e+02  2.709e+01  20.107  < 2e-16 ***
+Simb_domLatossolo           1.130e+03  2.168e+02  2.309e+02   5.214 4.10e-07 ***
+Simb_domNeossolo           -1.402e+03  3.464e+02  2.695e+02  -4.048 6.74e-05 ***
+AD_UM                      -8.928e+02  1.371e+02  2.876e+02  -6.510 3.33e-10 ***
+VG_T2M_mean                -5.216e+03  1.092e+03  3.000e+02  -4.777 2.79e-06 ***
+VG_T2M_median              -3.874e+03  9.742e+02  2.980e+02  -3.977 8.77e-05 ***
+VG_T2M_iqr                  1.300e+03  3.028e+02  2.905e+02   4.292 2.41e-05 ***
+VG_T2M_q10                  3.224e+03  5.058e+02  2.859e+02   6.375 7.31e-10 ***
+VG_T2M_MIN_cumulative       5.418e+05  1.936e+05  2.962e+02   2.798 0.005474 ** 
+VG_T2M_MAX_cumulative       8.743e+05  3.115e+05  2.962e+02   2.807 0.005336 ** 
+VG_RH2M_iqr                -5.802e+02  1.589e+02  2.887e+02  -3.651 0.000310 ***
+VG_RH2M_cumulative         -3.392e+03  8.105e+02  3.005e+02  -4.185 3.74e-05 ***
+VG_RH2M_q90                 1.082e+03  2.941e+02  2.823e+02   3.678 0.000282 ***
+VG_GWETROOT_mean           -4.759e+03  7.627e+02  2.956e+02  -6.239 1.52e-09 ***
+VG_GWETROOT_median          2.272e+03  5.454e+02  2.953e+02   4.166 4.07e-05 ***
+VG_GWETROOT_iqr            -4.144e+02  8.663e+01  2.939e+02  -4.783 2.73e-06 ***
+VG_GWETROOT_cumulative      1.553e+03  6.502e+02  2.959e+02   2.389 0.017532 *  
+VG_ALLSKY_SFC_PAR_TOT_q90   3.734e+02  1.423e+02  2.937e+02   2.624 0.009149 ** 
+VG_EVPTRNS_mean            -2.766e+03  3.287e+02  2.873e+02  -8.415 1.88e-15 ***
+VG_EVPTRNS_q90              1.555e+03  2.964e+02  2.927e+02   5.246 2.99e-07 ***
+VG_WS2M_mean                2.321e+03  9.314e+02  2.881e+02   2.492 0.013278 *  
+VG_WS2M_q90                -1.567e+03  6.894e+02  2.926e+02  -2.273 0.023765 *  
+VG_CDD0_median              2.956e+03  8.820e+02  2.870e+02   3.352 0.000911 ***
+VG_CDD0_iqr                -1.046e+03  2.536e+02  2.822e+02  -4.126 4.87e-05 ***
+VG_CDD0_cumulative         -1.387e+06  4.955e+05  2.962e+02  -2.799 0.005458 ** 
+RP_T2M_MIN_cumulative       2.250e+05  6.977e+04  2.734e+02   3.225 0.001413 ** 
+RP_T2M_MIN_q90              5.135e+03  7.482e+02  2.964e+02   6.863 3.94e-11 ***
+RP_T2M_MIN_q10              1.119e+03  5.116e+02  2.922e+02   2.188 0.029431 *  
+RP_T2M_MAX_mean             2.765e+05  8.378e+04  2.732e+02   3.301 0.001093 ** 
+RP_T2M_MAX_iqr              5.589e+02  1.362e+02  2.933e+02   4.103 5.29e-05 ***
+RP_T2M_MAX_q90             -2.895e+03  4.685e+02  2.891e+02  -6.181 2.17e-09 ***
+RP_PRECTOTCORR_mean        -4.244e+02  2.027e+02  2.992e+02  -2.094 0.037092 *  
+RP_PRECTOTCORR_median       3.198e+02  1.422e+02  2.995e+02   2.248 0.025298 *  
+RP_PRECTOTCORR_iqr          3.677e+02  1.032e+02  2.892e+02   3.562 0.000430 ***
+RP_PRECTOTCORR_q10          8.808e+02  1.044e+02  2.973e+02   8.436 1.45e-15 ***
+RP_RH2M_cumulative         -2.032e+03  3.799e+02  2.992e+02  -5.351 1.75e-07 ***
+RP_GWETROOT_median          2.192e+03  4.489e+02  2.994e+02   4.884 1.70e-06 ***
+RP_ALLSKY_SFC_PAR_TOT_mean -1.374e+03  1.961e+02  3.048e+02  -7.005 1.59e-11 ***
+RP_ALLSKY_SFC_PAR_TOT_iqr  -5.541e+02  1.003e+02  2.870e+02  -5.522 7.53e-08 ***
+RP_ALLSKY_SFC_PAR_TOT_q90   1.391e+03  1.910e+02  2.944e+02   7.281 3.05e-12 ***
+RP_EVPTRNS_mean             1.021e+03  1.476e+02  2.964e+02   6.915 2.88e-11 ***
+RP_WS2M_iqr                -9.728e+02  1.537e+02  2.869e+02  -6.330 9.43e-10 ***
+RP_CDD0_mean               -4.417e+05  1.346e+05  2.732e+02  -3.282 0.001165 ** 
+FG_T2M_MIN_iqr             -9.529e+02  1.397e+02  2.909e+02  -6.823 5.17e-11 ***
+FG_T2M_MIN_cumulative      -3.482e+03  4.965e+02  3.021e+02  -7.013 1.54e-11 ***
+FG_T2M_MIN_q10              1.791e+03  3.258e+02  2.971e+02   5.497 8.32e-08 ***
+FG_PRECTOTCORR_median       3.035e+02  1.178e+02  2.915e+02   2.577 0.010452 *  
+FG_PRECTOTCORR_iqr         -3.356e+02  1.047e+02  3.016e+02  -3.205 0.001493 ** 
+FG_RH2M_mean                1.787e+03  5.463e+02  2.960e+02   3.272 0.001196 ** 
+FG_RH2M_median             -1.380e+03  4.735e+02  2.804e+02  -2.914 0.003856 ** 
+FG_RH2M_q90                -7.105e+02  2.212e+02  2.981e+02  -3.212 0.001464 ** 
+FG_GWETROOT_median         -1.089e+03  3.524e+02  2.914e+02  -3.090 0.002196 ** 
+FG_ALLSKY_SFC_PAR_TOT_iqr  -1.609e+02  8.007e+01  2.967e+02  -2.010 0.045319 *  
+FG_EVPTRNS_q90              7.704e+02  1.283e+02  2.967e+02   6.004 5.60e-09 ***
+FG_WS2M_cumulative         -4.570e+03  1.354e+03  2.817e+02  -3.375 0.000841 ***
+FG_WS2M_q90                 2.556e+03  7.592e+02  2.795e+02   3.366 0.000869 ***
+FG_WS2M_q10                 1.775e+03  4.868e+02  2.918e+02   3.647 0.000315 ***
+FG_CDD0_iqr                 4.238e+02  1.080e+02  3.005e+02   3.923 0.000109 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+fit warnings:
+fixed-effect model matrix is rank deficient so dropping 4 columns / coefficients
