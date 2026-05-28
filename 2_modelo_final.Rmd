@@ -1,0 +1,272 @@
+---
+title: "Untitled"
+output: pdf_document
+date: "2026-05-28"
+---
+
+```{r}
+rm(list=ls()) 
+pacotes <- c(
+  "lme4", "lmerTest", "GA", "dplyr", "readxl",
+  "DHARMa", "stringr", "caret", "parallel", "doParallel"
+)
+
+instalar_e_carregar <- function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) install.packages(pkg)
+  library(pkg, character.only = TRUE)
+}
+invisible(lapply(pacotes, instalar_e_carregar))
+
+#setwd("/Users/mariavitoriadiastorres/Downloads")
+
+final_data <- read_excel(file.choose())
+
+# Filtro de Variáveis Climáticas
+vars_climaticas <- c(
+  "T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR",
+  "GWETROOT", "RH2M", "ALLSKY_SFC_PAR_TOT",
+  "EVPTRNS", "WS2M", "CDD0"
+)
+
+padrao_manter  <- paste(vars_climaticas, collapse = "|")
+cols_clim_ok   <- grepl(padrao_manter, names(final_data))
+cols_clim_todas <- grepl("^(veg_|repro_|gf_)", names(final_data))
+
+final_data <- final_data[, !cols_clim_todas | cols_clim_ok]
+
+names(final_data) <- gsub("^veg_", "VG_", names(final_data))
+names(final_data) <- gsub("^repro_", "RP_", names(final_data))
+names(final_data) <- gsub("^gf_", "FG_", names(final_data))
+
+final_data <- final_data %>%
+  mutate(
+    Simb_dom = case_when(
+      grepl("Latossolo", Simb) ~ "Latossolo",
+      grepl("Neossolo", Simb) ~ "Neossolo",
+      TRUE ~ "Argissolo_e_Outros" 
+    )
+  )
+
+final_data$Simb_dom <- factor(final_data$Simb_dom)
+
+check_simb <- final_data %>%
+  group_by(TRIAL, GEN) %>%
+  summarise(
+    n_simb = n_distinct(Simb_dom), 
+    .groups = "drop"
+  ) %>%
+  filter(n_simb > 1)
+
+if(nrow(check_simb) > 0) {
+  warning("Atenção: Existem Trials/Gen com mais de um solo dominante!")
+} else {
+  message("Tudo certo! Nenhum ensaio está dividido em mais de um solo.")
+}
+
+final_data <- final_data %>%
+  group_by(TRIAL, GEN) %>%
+  filter(n() == 4) %>%
+  ungroup() %>%
+  mutate(across(where(is.character), as.factor)) %>%
+  group_by(TRIAL, GEN) %>%
+  summarise(
+    across(where(is.numeric), \(x) mean(x, na.rm = TRUE)),
+    across(where(is.factor), ~ first(.x)),
+    .groups = "drop"
+  ) %>%
+  filter(!is.na(GY), GY > 900, !is.na(Simb), !is.na(AD_UM))
+
+remover <- c(
+  "TRIAL","DATE","ST","REGIAO","TYPE","DESIGN",
+  "LATITUDE","LONGITUDE","Ano_Semeadura",
+  "PI_dias","PM_dias","DTF","REP","N_REP",
+  "LOCATION","AD_UM_cat","Classe_AD"
+)
+
+final_data <- final_data %>%
+  mutate(LOC = paste(LOC, ST, sep = "_")) %>%
+  select(-any_of(remover))
+
+final_data$LOC <- factor(final_data$LOC)
+final_data$GEN <- factor(final_data$GEN)
+final_data$Simb <- factor(final_data$Simb)
+
+
+vars_num <- setdiff(names(final_data)[sapply(final_data, is.numeric)], "GY")
+
+variancias <- sapply(final_data[vars_num], var, na.rm = TRUE)
+vars_var_zero <- names(variancias[is.na(variancias) | variancias == 0])
+
+if (length(vars_var_zero) > 0) {
+  final_data <- final_data %>% select(-all_of(vars_var_zero))
+  vars_num   <- setdiff(vars_num, vars_var_zero)
+}
+
+dados_originais <- final_data
+final_data[vars_num] <- scale(final_data[vars_num])
+```
+
+
+
+```{r }
+fixed_candidates <- final_data %>% select(-GY, -GEN, -LOC, -Simb_dom, -Simb, -any_of("AD_UM"))
+controle_rapido <- lmerControl(optimizer = "bobyqa", calc.derivs = FALSE)
+
+fitness_ga <- function(cromossomo){
+  vars_selecionadas <- names(fixed_candidates)[cromossomo == 1]
+  
+  if(length(vars_selecionadas) == 0){
+    form_str <- "GY ~ Simb_dom + AD_UM + (1|GEN) + (1|GEN:LOC)"
+  } else {
+    form_str <- paste("GY ~ Simb_dom + AD_UM +", paste(vars_selecionadas, collapse = " + "), "+ (1|GEN) + (1|GEN:LOC)")
+  }
+  
+  fit <- tryCatch(
+    lmer(as.formula(form_str), data = final_data, REML = TRUE, control = controle_rapido),
+    error = function(e) NULL
+  )
+  if(is.null(fit)) return(-1e6)
+  return(-sqrt(mean(residuals(fit)^2)))
+}
+
+
+#cl <- makeCluster(2) 
+#registerDoParallel(cl)
+#clusterExport(cl, varlist = c("fixed_candidates", "final_data", "controle_rapido"))
+#clusterEvalQ(cl, { library(lme4) })
+
+message("Iniciando GA paralelo (Modo Seguro - 2 Núcleos)...")
+ga_res <- ga(type = "binary", 
+             fitness = fitness_ga, 
+             nBits = ncol(fixed_candidates),
+             popSize = 50, 
+             maxiter = 50, 
+             run = 15, 
+             seed = 2025, 
+             parallel = TRUE, 
+             monitor = TRUE)
+
+#stopCluster(cl) 
+#registerDoSEQ()
+
+vars_ga <- names(fixed_candidates)[ga_res@solution[1,] == 1]
+print("Variáveis selecionadas naturalmente pelo GA:")
+print(vars_ga)
+```
+
+
+```{r }
+form_final <- if(length(vars_ga) == 0) "GY ~  Simb_dom + AD_UM + (1|GEN) + (1|GEN:LOC)" else 
+  paste("GY ~ Simb_dom + AD_UM +", paste(vars_ga, collapse = " + "), "+ (1|GEN) + (1|GEN:LOC)")
+
+mod_ga <- lmer(as.formula(form_final),
+               data = final_data,
+               REML = TRUE, 
+               control = lmerControl(optimizer = "bobyqa"))
+
+summary(mod_ga)
+```
+
+
+```{r}
+limpar_modelo_misto <- function(modelo_inicial, data, alpha = 0.05) {
+  modelo_atual <- modelo_inicial
+  
+  # Detecta dinamicamente quais variáveis obrigatórias existem no dado
+  fixas_obrigatorias_base <- c("Simb_dom", "AD_UM")
+  fixas_obrigatorias <- fixas_obrigatorias_base[
+    fixas_obrigatorias_base %in% names(data)
+  ]
+  
+  repeat {
+    summ <- summary(modelo_atual)$coefficients
+    vars_coef <- rownames(summ)
+    termos_formula <- attr(terms(formula(modelo_atual)), "term.labels")
+    termos_formula <- termos_formula[!grepl("\\|", termos_formula)] # remove efeitos aleatórios
+    
+    # Filtra termos que são obrigatórios
+    termos_candidatos <- termos_formula[
+      !sapply(termos_formula, function(t)
+        any(sapply(fixas_obrigatorias, function(f) grepl(paste0("^", f), t)))
+      )
+    ]
+    
+    if (length(termos_candidatos) == 0) break
+    
+    # Para cada termo candidato, pega o maior p-valor entre seus coeficientes
+    col_p <- grep("Pr\\(>\\|", colnames(summ), value = TRUE)
+    if (length(col_p) == 0) break
+    
+    p_por_termo <- sapply(termos_candidatos, function(termo) {
+      # Coeficientes que pertencem a esse termo
+      coefs_do_termo <- vars_coef[grepl(paste0("^", termo), vars_coef)]
+      if (length(coefs_do_termo) == 0) return(0)
+      max(summ[coefs_do_termo, col_p])
+    })
+    
+    max_p <- max(p_por_termo)
+    
+    if (max_p > alpha) {
+      termo_remover <- names(which.max(p_por_termo))
+      message("Removendo termo: ", termo_remover, " (p = ", round(max_p, 4), ")")
+      
+      nova_form <- update(
+        formula(modelo_atual),
+        as.formula(paste0(". ~ . - ", termo_remover))
+      )
+      
+      modelo_novo <- tryCatch(
+        lmer(nova_form, data = data, REML = TRUE,
+             control = lmerControl(optimizer = "bobyqa")),
+        error = function(e) {
+          message("Erro ao remover '", termo_remover, "': ", e$message)
+          NULL
+        }
+      )
+      
+      
+      if (is.null(modelo_novo)) {
+        message("Backward interrompido: remoção causaria colapso.")
+        break
+      }
+      
+     
+      if (isSingular(modelo_novo)) {
+        message("Atenção: modelo singular após remover '", termo_remover,
+                "'. Verificar estrutura aleatória.")
+      }
+      
+      modelo_atual <- modelo_novo
+      
+    } else {
+      break
+    }
+  }
+  
+  return(modelo_atual)
+}
+
+if (!"AD_UM" %in% names(final_data)) {
+  message("AD_UM não encontrada no dataframe — ajustando fórmula do GA...")
+  
+  form_final <- if (length(vars_ga) == 0) {
+    "GY ~ Simb_dom + (1|GEN) + (1|GEN:LOC)"
+  } else {
+    paste("GY ~ Simb_dom +", paste(vars_ga, collapse = " + "), "+ (1|GEN) + (1|GEN:LOC)")
+  }
+  
+  mod_ga <- lmer(as.formula(form_final), data = final_data, REML = TRUE,
+                 control = lmerControl(optimizer = "bobyqa"))
+}
+
+dados_c1  <- final_data
+mod_misto <- limpar_modelo_misto(mod_ga, dados_c1, alpha = 0.05)
+
+summary(mod_misto)
+```
+
+
+```{r}
+plot(simulateResiduals(mod_misto))
+```
+
